@@ -55,8 +55,6 @@ cp /home/username/appjardir/myApp-0.0.1-SNAPSHOT.jar s3://ce2228-bucket-01/myapp
 ![image](https://github.com/user-attachments/assets/6ce1290d-108c-4e3a-b8c5-96bd31489bc0)
 ![image](https://github.com/user-attachments/assets/202fc1e7-31e6-419c-9615-fb2ed68c14f2)
 
-
-
 ## jenkins 파이프라인 및 기타 설정
 
 파이프라인 구성 script
@@ -106,7 +104,26 @@ pipeline {
 }
 ```
 
-jenkins Credentials에 로컬과 소통할 ssh private key 등록
+jenkins와 로컬이 소통할 ssh key 설정
+
+```shell
+# myjenkins bash 
+username@awsclient:~$ docker exec -u root -it myjenkins bash
+
+# 기본 경로에 키 생성 후, 저장 / 비밀번호 생성 x
+root@cd32961bc995:/# ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# public key 확인 후, 복사
+root@cd32961bc995:/# cat ~/.ssh/id_rsa.pub
+
+# host의 ~/.ssh/authorized_keys에 적용
+username@awsclient:~$ echo "복사한 키" >> ~/.ssh/authorized_keys
+
+# private 키 복사 후, jenkins credential에 등록
+username@awsclient:~$ cat ~/.ssh/id_rsa
+```
+
+jenkins Credentials에 ssh private key 등록
 
 ![image](https://github.com/user-attachments/assets/360a711e-c7ba-44be-92e7-2e961024b9f6)
 
