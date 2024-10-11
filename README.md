@@ -70,5 +70,5 @@
 ![image](https://github.com/user-attachments/assets/9c8e19d1-6cba-46c2-8948-ac554389ba94)
 ### 생성했던 sqs대기열 선택
 ![image](https://github.com/user-attachments/assets/da43ec0a-4f1b-4460-859f-202fa49294dc)
-
+dd
 
