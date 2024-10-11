@@ -18,23 +18,94 @@
 ![image](https://github.com/user-attachments/assets/35ba6fe3-4f34-4505-83e6-6291ace612a7)
 
 
-## jenkins ngrok
+## docker 내 jenkins 설치 및 ngrok 설정
 
+```bash
+# docker 설치
+sudo apt install docker.io
+
+# jenkins 설치 및 실행
+docker run --name myjenkins --privileged -p 8888:8080
+ -v $(pwd)/appjardir:/var/jenkins_home/appjar jenkins/jenkins:lts-jdk17
+```
+
+ngrok 설정하기
+
+```bash
+ngrok http http://127.0.0.1:8888
+```
+
+![image](https://github.com/user-attachments/assets/06ea8739-2ffe-4cff-89b5-524fafa0caab)
 
 ## github webhook 설정
 ![image](https://github.com/user-attachments/assets/62649437-38f7-4586-bb51-681fd336e0d7)
 ![image](https://github.com/user-attachments/assets/45249f10-2b28-4892-afee-b9812cc7d7b5)
 ![image](https://github.com/user-attachments/assets/38eb7c1d-71df-438f-8059-114f4afab8ee)
 
+### 
+```bash
+sudo apt install awscli
+
+# s3로 jar 파일 복사
+cp /home/username/appjardir/myApp-0.0.1-SNAPSHOT.jar s3://ce2228-bucket-01/myapp.jar
+```
 
 ## S3 버킷 생성
 ![image](https://github.com/user-attachments/assets/f3f8a5e4-1eed-4270-889f-e4c2c2e9ee61)
 
 
 ## jenkins 파이프라인 및 기타 설정
-```
+
+파이프라인 구성 script
+
+```shell
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'cicd', url: 'https://github.com/leesj000603/AWS-Jenkins-CICD.git'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                dir('./') {                   
+                    sh 'chmod +x gradlew'                    
+                    sh './gradlew clean build -x test'
+                    sh 'echo $WORKSPACE'   
+                }
+            }
+        }
+        
+        stage('Copy jar') { 
+            steps {
+                script {
+                    def jarFile = '/var/jenkins_home/workspace/aws/build/libs/myApp-0.0.1-SNAPSHOT.jar'                   
+                    sh "cp ${jarFile} /var/jenkins_home/appjar/"
+                }
+            }
+        }
+        
+        stage('Copy to s3') {
+            steps {
+                script {
+                    def host = 'username@10.0.2.30' // 호스트의 사용자 이름과 IP 주소
+                    sshagent(['myjenkins']) {
+                        // 스크립트 실행
+                        sh "ssh -o StrictHostKeyChecking=no ${host} 'aws s3 cp /home/username/appjardir/myApp-0.0.1-SNAPSHOT.jar s3://ce2228-bucket-01/myapp.jar'"
+                    }
+                }
+            }
+        }
+    }
+}
 ```
 
+jenkins Credentials에 로컬과 소통할 ssh private key 등록
+
+![image](https://github.com/user-attachments/assets/360a711e-c7ba-44be-92e7-2e961024b9f6)
 
 ## Amazon Simple Queue Service 생성
 ### 세부 정보 설정
