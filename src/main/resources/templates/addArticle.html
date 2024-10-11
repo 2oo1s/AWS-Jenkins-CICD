@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Article</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h1>Add New Article</h1>
+<form action="/add" method="post">
+    <input type="text" name="title" placeholder="Article Title" required> <!-- 기사 제목 입력 -->
+    <input type="text" name="author" placeholder="Author Name" required> <!-- 기사 저자 입력 추가 -->
+    <textarea name="content" placeholder="Article Content" rows="10" required></textarea> <!-- 기사 내용 입력 -->
+    <button type="submit">Add Article</button> <!-- 제출 버튼 -->
+</form>
+<a href="/articles">Back to Articles</a> <!-- 기사 목록으로 돌아가는 링크 -->
+</body>
+</html>
