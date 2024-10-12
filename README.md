@@ -1,7 +1,7 @@
 # AWS-Jenkins-CICD
- Jenkins 파이프라인을 통해 github push event 발생 시, jar파일 빌드, AWS S3로 업로드 후 Amazon SQS 메세지를 활용하여 ec2가 jar버전 변경을 감지하고, 이를 가져와 실행하는 CICD 과정을 다룬다.
+Jenkins 파이프라인을 통해 github push event 발생 시, jar 파일을 빌드하고 AWS S3로 업로드 후, Amazon SQS 메세지를 활용하여 ec2가 jar 버전 변경을 감지하고 이를 가져와 실행하는 CICD 과정을 다룬다.
 
-# 👨🏻‍💻👩🏻‍💻 팀원 소개
+## 👨🏻‍💻👩🏻‍💻 팀원 소개
 
 | 이승준 | 이주원 |
 |:-----------:|:-----------:|
@@ -9,8 +9,9 @@
 | [@leesj000603](https://github.com/leesj000603) | [@2oo1s](https://github.com/2oo1s) |
 
 
-# 실습 과정
-### Amazon rds에 연결한 간단한 기사를 작성하여 저장하는 프로젝트 생성 / github에 등록
+## 실습 과정
+### 1. Amazon rds에 연결한 간단한 기사를 작성하고 저장하는 프로젝트 생성 및 github에 업로드
+
 ![image](https://github.com/user-attachments/assets/a0b4241d-8597-40ba-a8b8-7e1ded98ebe1)
 
 ![image](https://github.com/user-attachments/assets/71c5e5c9-b4eb-41e2-9e39-d677011555d6)
@@ -18,14 +19,21 @@
 ![image](https://github.com/user-attachments/assets/35ba6fe3-4f34-4505-83e6-6291ace612a7)
 
 
-## docker 내 jenkins 설치 및 ngrok 설정
+### 2. Docker 내 Jenkins 설치 및 ngrok 설정
+
+호스트의 디렉토리`($(pwd)/appjardir)`를 컨테이너의 `/var/jenkins_home/appjar` 경로에 마운트하여 데이터가 지속적으로 유지되도록 설정한다.
 
 ```bash
 # docker 설치
 sudo apt install docker.io
 
+# 권한 추가 및 적용
+$sudo usermod -a -G docker $USER 
+$newgrp docker    
+$groups
+
 # jenkins 설치 및 실행
-docker run --name myjenkins --privileged -p 8888:8080
+docker run --name myjenkins --privileged -p 8888:8080 \
  -v $(pwd)/appjardir:/var/jenkins_home/appjar jenkins/jenkins:lts-jdk17
 ```
 
@@ -37,12 +45,11 @@ ngrok http http://127.0.0.1:8888
 
 ![image](https://github.com/user-attachments/assets/06ea8739-2ffe-4cff-89b5-524fafa0caab)
 
-## github webhook 설정
-![image](https://github.com/user-attachments/assets/62649437-38f7-4586-bb51-681fd336e0d7)
-![image](https://github.com/user-attachments/assets/45249f10-2b28-4892-afee-b9812cc7d7b5)
-![image](https://github.com/user-attachments/assets/38eb7c1d-71df-438f-8059-114f4afab8ee)
+ngrok을 통해 생성된 url을 github webhook으로 설정
 
-### 
+![image](https://github.com/user-attachments/assets/62649437-38f7-4586-bb51-681fd336e0d7)
+
+#### 
 ```bash
 sudo apt install awscli
 
@@ -50,14 +57,9 @@ sudo apt install awscli
 cp /home/username/appjardir/myApp-0.0.1-SNAPSHOT.jar s3://ce2228-bucket-01/myapp.jar
 ```
 
-## S3 버킷 생성
-![image](https://github.com/user-attachments/assets/f3f8a5e4-1eed-4270-889f-e4c2c2e9ee61)
-![image](https://github.com/user-attachments/assets/6ce1290d-108c-4e3a-b8c5-96bd31489bc0)
-![image](https://github.com/user-attachments/assets/202fc1e7-31e6-419c-9615-fb2ed68c14f2)
+### 3. Jenkins 파이프라인 및 기타 설정
 
-## jenkins 파이프라인 및 기타 설정
-
-파이프라인 구성 script
+파이프라인 스크립트를 통해 GitHub에서 코드를 클론하고, Gradle로 빌드한 후, 생성된 JAR 파일을 특정 디렉토리로 복사하고, 마지막으로 AWS S3 버킷에 업로드하는 과정을 자동화한다.
 
 ```shell
 pipeline {
@@ -104,7 +106,7 @@ pipeline {
 }
 ```
 
-jenkins와 로컬이 소통할 ssh key 설정
+Jenkins와 호스트 머신의 소통을 위한 ssh key를 설정해준다.
 
 ```shell
 # myjenkins bash 
@@ -123,9 +125,14 @@ username@awsclient:~$ echo "복사한 키" >> ~/.ssh/authorized_keys
 username@awsclient:~$ cat ~/.ssh/id_rsa
 ```
 
-jenkins Credentials에 ssh private key 등록
+Jenkins Credentials에 ssh private key를 등록해준다.
 
 ![image](https://github.com/user-attachments/assets/360a711e-c7ba-44be-92e7-2e961024b9f6)
+
+## S3 버킷 생성
+![image](https://github.com/user-attachments/assets/f3f8a5e4-1eed-4270-889f-e4c2c2e9ee61)
+![image](https://github.com/user-attachments/assets/6ce1290d-108c-4e3a-b8c5-96bd31489bc0)
+![image](https://github.com/user-attachments/assets/202fc1e7-31e6-419c-9615-fb2ed68c14f2)
 
 ## Amazon Simple Queue Service 생성
 ### 세부 정보 설정
