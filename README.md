@@ -2,7 +2,8 @@
 Jenkins 파이프라인을 통해 github push event 발생 시, jar 파일을 빌드하고 AWS S3로 업로드 후, Amazon SQS 메세지를 활용하여 ec2가 jar 버전 변경을 감지하고 이를 가져와 실행하는 CICD 과정을 다룬다.
 
 ## Architecture
-![image](https://github.com/user-attachments/assets/c86a70d8-8454-4ba4-8f60-dc7033925250)
+![image](https://github.com/user-attachments/assets/3cf17dcc-c726-4729-980f-2fcc0829bb80)
+
 
 
 ## 👨🏻‍💻👩🏻‍💻 팀원 소개
