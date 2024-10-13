@@ -232,8 +232,7 @@ Jenkins Credentials에 ssh private key를 등록해준다.
 
 ### S3의 메세지가 queue에 존재하면 jar를 복사하여 실행한다.
 
-```
-
+```python
 # SQS 메시지 수신 및 처리
 import os
 import boto3
@@ -308,7 +307,8 @@ if __name__ == "__main__":
 ![image](https://github.com/user-attachments/assets/bda8d642-f93c-4afc-ac08-b3f266e9e512)
 
 #### SQS 메세지 예시 - ObjectCreated 이벤트가 발생한 것에 대한 메세지를 보내고 있다.
-```
+
+```json
 {
   "Records": [
     {
