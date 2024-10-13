@@ -235,6 +235,7 @@ ec2에서 SQS로부터 메세지를 읽어들일 수 있는 권한과, S3에서 
 
 ### S3에서 jar파일이 변경되었을 때의 SQS메세지 수신 및 S3의 jar 복사 및 실행 스크립트
 ```python
+python
 # SQS 메시지 수신 및 처리
 import os
 import boto3
@@ -264,7 +265,16 @@ def download_jar(s3_key):
 # JAR 파일 실행
 def run_jar(local_jar_path):
     try:
+        # 8080 포트에서 실행 중인 프로세스를 찾고 종료
+        result = subprocess.run(['lsof', '-t', '-i:8080'], stdout=subprocess.PIPE, text=True)
+        pid = result.stdout.strip()
+
+        if pid:
+	    subprocess.run(['kill', '-9', pid])
+
+        # 새로운 JAR 파일 실행
         subprocess.run(['java', '-jar', local_jar_path], check=True)
+
     except subprocess.CalledProcessError as e:
         print(f"JAR 파일 실행 중 오류 발생: {e}")
 
@@ -316,8 +326,9 @@ if __name__ == "__main__":
 - S3 다운로드: s3.download_file()을 사용해 S3에서 파일을 다운로드하고, 그 파일의 로컬 경로를 반환한다.
 
 #### run_jar 함수
+- 포트 충돌을 피하기 위해 8080 포트 확인 후 실행중인 프로세스가 있다면 종료.
 - JAR 파일 실행: subprocess.run()을 통해 JAR 파일을 실행한다. 여기서는 java -jar <jar파일> 명령을 사용한다.
-- 오류 처리: 만약 JAR 파일 실행 도중 문제가 발생하면, subprocess.CalledProcessError 예외를 잡아 에러 메시지를 출력한다.
+- 오류 처리: 만약 프로세스 종료 또는 JAR 파일 실행 도중 문제가 발생하면, subprocess.CalledProcessError 예외를 잡아 에러 메시지를 출력한다.
 
 #### process_sqs_messages 함수
 - SQS 클라이언트 생성: boto3.client('sqs')로 SQS에 연결한니다. 이 클라이언트를 사용해 메시지를 받아온다.
@@ -330,6 +341,7 @@ if __name__ == "__main__":
 - 오류 처리: 메시지 수신 중 발생하는 예외는 try-except 블록으로 처리하여 에러가 발생할 때마다 이를 출력한다.
 - 대기 시간: 메시지가 없을 때에는 5초 대기 후 다시 메시지를 확인하는 방식으로 리소스 소모를 줄인다.
 
+#### 스크립트 실행 후 jar파일이 저장되는 S3의 이벤트를 읽어들여 jar파일을 가져와 실행하는 모습
 ![image](https://github.com/user-attachments/assets/06856220-c908-4874-8f02-4e3dc478d27d)
 
 #### 실행 중인 모습
