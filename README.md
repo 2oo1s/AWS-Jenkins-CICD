@@ -130,9 +130,12 @@ Jenkins Credentials에 ssh private key를 등록해준다.
 ![image](https://github.com/user-attachments/assets/360a711e-c7ba-44be-92e7-2e961024b9f6)
 
 ### 4. S3 버킷 생성
+
+S3 버킷 이름 설정 및 ACL 비활성화
 ![image](https://github.com/user-attachments/assets/f3f8a5e4-1eed-4270-889f-e4c2c2e9ee61)
+
+버킷 퍼블릭 액세스 허용
 ![image](https://github.com/user-attachments/assets/6ce1290d-108c-4e3a-b8c5-96bd31489bc0)
-![image](https://github.com/user-attachments/assets/202fc1e7-31e6-419c-9615-fb2ed68c14f2)
 
 ### 5. Amazon Simple Queue Service 생성
 
@@ -141,7 +144,7 @@ Jenkins Credentials에 ssh private key를 등록해준다.
 ![image](https://github.com/user-attachments/assets/e7316091-535b-4857-adf9-c25677ac09f2)
 
 #### 액세스 정책 설정
-
+ARN (Amazon Resource Name) 을 통해 S3버킷에 대한 SQS 메세지 수신을 허용
 ```
 {
   "Version": "2012-10-17",
@@ -166,27 +169,26 @@ Jenkins Credentials에 ssh private key를 등록해준다.
 
 
 ### 6. S3 SQS 메세지 발송 설정
-#### s3 → 버킷 → 속성
-
-#### put과 post에 대하여 이벤트 알림을 sqs로 보내도록 설정
-
+#### s3 → 버킷 → 속성 -> 이벤트 알림 생성
 ![image](https://github.com/user-attachments/assets/9c8e19d1-6cba-46c2-8948-ac554389ba94)
 
-#### 생성했던 sqs대기열 선택
+#### 모든 객체 생성 이벤트에 대하여 알림을 보내도록 설정
+![image](https://github.com/user-attachments/assets/4fe35a29-85ec-4468-82a0-ef99a65949c7)
 
+
+
+#### 생성했던 sqs대기열에 이벤트 메세지를 보내도록 등록한다.
 ![image](https://github.com/user-attachments/assets/da43ec0a-4f1b-4460-859f-202fa49294dc)
 
  
 ### 7. iam 역할 생성
-
+ec2에서 SQS로부터 메세지를 읽어들일 수 있는 권한과, S3에서 jar파일을 복사해 가져올 수 있는 권한이 필요하다. 
 ![image](https://github.com/user-attachments/assets/0cb78fed-2e9f-4ad5-9bf8-305f77523c28)
 
-#### aws 서비스, ec2 사용사례 추가
-
+#### ec2에 적용 할 것이므로 aws 서비스, ec2 사용사례 선택
 ![image](https://github.com/user-attachments/assets/0f1c265d-f170-4c7c-b369-b47c9ef41981)
 
-#### 권한 amazonS3ReadOnly, amazonSQSFullAccess 추가
-
+#### 권한 amazonS3ReadOnly, amazonSQSFullAccess 추가 
 ![image](https://github.com/user-attachments/assets/cd1222c8-c5d9-4e9f-b10b-1ed30dd3ba92)
 
 ![image](https://github.com/user-attachments/assets/fd75cfed-296b-4050-8385-9ab800c40e4b)
@@ -230,8 +232,8 @@ Jenkins Credentials에 ssh private key를 등록해준다.
 
 이제 ec2는 s3로 부터 날아온 SQS 에 접근이 가능하다.
 
-### S3의 메세지가 queue에 존재하면 jar를 복사하여 실행한다.
 
+### S3에서 jar파일이 변경되었을 때의 SQS메세지 수신 및 S3의 jar 복사 및 실행 스크립트
 ```python
 # SQS 메시지 수신 및 처리
 import os
@@ -294,16 +296,51 @@ if __name__ == "__main__":
     process_sqs_messages()
 ```
 
+#### 1. 라이브러리 및 환경 설정
+- boto3: AWS 서비스와 상호작용하기 위한 Python SDK이다. 여기서는 S3와 SQS에 연결한다.
+- subprocess: 파이썬 코드에서 외부 프로세스를 실행하기 위한 모듈이다. 여기서는 JAR 파일을 실행한다.
+- json: SQS에서 수신한 메시지를 JSON 형식으로 파싱하기 위한 모듈이다.
+- time: SQS 메시지 수신 간격을 조정하기 위해 사용한다.
+
+**환경 변수:**
+
+- s3_bucket_name: S3에서 JAR 파일을 다운로드할 버킷 이름을 설정.
+- queue_url: SQS 대기열의 URL을 설정합.
+- local_jar_dir: 다운로드한 JAR 파일을 저장할 로컬 디렉터리 경로.
+
+
+#### download_jar함수
+- S3 클라이언트 생성: boto3.client('s3')를 통해 S3에 연결한다.
+- JAR 파일 경로 설정: S3에서 다운로드할 파일을 저장할 로컬 경로를 생성한다. s3_key는 S3에서 다운로드할 파일의 경로이고, os.path.basename(s3_key)는 파일 이름을 추출한다.
+- 디렉터리 생성: 로컬 경로에 디렉터리가 존재하지 않으면 os.makedirs()로 새로 생성한다.
+- S3 다운로드: s3.download_file()을 사용해 S3에서 파일을 다운로드하고, 그 파일의 로컬 경로를 반환한다.
+
+#### run_jar 함수
+- JAR 파일 실행: subprocess.run()을 통해 JAR 파일을 실행한다. 여기서는 java -jar <jar파일> 명령을 사용한다.
+- 오류 처리: 만약 JAR 파일 실행 도중 문제가 발생하면, subprocess.CalledProcessError 예외를 잡아 에러 메시지를 출력한다.
+
+#### process_sqs_messages 함수
+- SQS 클라이언트 생성: boto3.client('sqs')로 SQS에 연결한니다. 이 클라이언트를 사용해 메시지를 받아온다.
+- 무한 루프: SQS 메시지를 지속적으로 수신하기 위해 while True 루프를 사용한다.
+- 메시지 수신: sqs.receive_message()를 통해 SQS 대기열에서 메시지를 가져온다. 수신된 메시지는 리스트 형태로 반환된다.
+- 메시지 처리:
+  - 메시지 본문은 JSON 형식으로 되어 있으므로 json.loads()로 파싱하여 message_body에 저장한다.
+  - 수신된 메시지에 Records가 포함되어 있으면, 이는 S3 이벤트와 연관된 메시지로 간주되며, 그 안에서 S3의 파일 경로(= s3_key)를 가져온다.
+  - JAR 파일을 다운로드하고 실행한 후, 메시지 처리가 완료되면 sqs.delete_message()로 SQS에서 해당 메시지를 삭제한다.
+- 오류 처리: 메시지 수신 중 발생하는 예외는 try-except 블록으로 처리하여 에러가 발생할 때마다 이를 출력한다.
+- 대기 시간: 메시지가 없을 때에는 5초 대기 후 다시 메시지를 확인하는 방식으로 리소스 소모를 줄인다.
+
 ![image](https://github.com/user-attachments/assets/06856220-c908-4874-8f02-4e3dc478d27d)
 
 #### 실행 중인 모습
-
+간단한 내용을 삽입 - 생성했던 RDS에 정상적으로 저장되어야 정상 동작이다.
 ![image](https://github.com/user-attachments/assets/f4a1dce6-49b6-400d-983a-b653e474e366)
 
 #### RDS에도 저장됨을 DBeaver로 확인
-
+RDS를 DBeaver 연결 해놓은 connection
 ![image](https://github.com/user-attachments/assets/c34bd458-0e03-4bde-a990-9aadcea89b32)
-
+이를 통해 db에 삽입됨을 확인
+<br>
 ![image](https://github.com/user-attachments/assets/bda8d642-f93c-4afc-ac08-b3f266e9e512)
 
 #### SQS 메세지 예시 - ObjectCreated 이벤트가 발생한 것에 대한 메세지를 보내고 있다.
