@@ -336,7 +336,7 @@ if __name__ == "__main__":
 - 오류 처리: 만약 프로세스 종료 또는 JAR 파일 실행 도중 문제가 발생하면, subprocess.CalledProcessError 예외를 잡아 에러 메시지를 출력한다.
 
 #### process_sqs_messages 함수
-- SQS 클라이언트 생성: boto3.client('sqs')로 SQS에 연결한니다. 이 클라이언트를 사용해 메시지를 받아온다.
+- SQS 클라이언트 생성: boto3.client('sqs')로 SQS에 연결한다. 이 클라이언트를 사용해 메시지를 받아온다.
 - 무한 루프: SQS 메시지를 지속적으로 수신하기 위해 while True 루프를 사용한다.
 - 메시지 수신: sqs.receive_message()를 통해 SQS 대기열에서 메시지를 가져온다. 수신된 메시지는 리스트 형태로 반환된다.
 - 메시지 처리:
