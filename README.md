@@ -137,9 +137,11 @@ Jenkins Credentials에 ssh private key를 등록해준다.
 ### 4. S3 버킷 생성
 
 S3 버킷 이름 설정 및 ACL 비활성화
+<br>
 ![image](https://github.com/user-attachments/assets/f3f8a5e4-1eed-4270-889f-e4c2c2e9ee61)
 
 버킷 퍼블릭 액세스 허용
+<br>
 ![image](https://github.com/user-attachments/assets/6ce1290d-108c-4e3a-b8c5-96bd31489bc0)
 
 ### 5. Amazon Simple Queue Service 생성
